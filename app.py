@@ -142,10 +142,10 @@ with aba_avm:
         vetor_alvo = [1, area_alvo, area_terreno_alvo, float(indice_fiscal_alvo)]
         prstd, iv_l, iv_u = wls_prediction_std(modelo, exog=[vetor_alvo], alpha=0.05)
         
-        preco_m2_calc = float(modelo.predict([vetor_alvo]))
+        preco_m2_calc = float(modelo.predict([vetor_alvo])[0])
         valor_final_calc = preco_m2_calc * area_alvo
-        v_min_calc = float(iv_l) * area_alvo
-        v_max_calc = float(iv_u) * area_alvo
+        v_min_calc = float(iv_l[0]) * area_alvo
+        v_max_calc = float(iv_u[0]) * area_alvo
         r2_calc = f"{modelo.rsquared:.4f}"
         n_amostras_calc = len(df_saneado)
         
