@@ -50,7 +50,7 @@ def gerar_laudo_pdf_ia(tenant, tipologia, area, valores, model_stats, status_jur
     story.append(Paragraph(f"LAUDO TÉCNICO CORE AVM - INTELIGÊNCIA ARTIFICIAL ({tipologia})", title_style))
     story.append(Paragraph(f"<b>Instituição Solicitante:</b> {tenant}", text_style))
     story.append(Spacer(1, 10))
-    t1 = Table([["Tipologia do Bem", tipologia, "Dimensão Principal", f"{area} m²"]], colWidths=)
+    t1 = Table([["Tipologia do Bem", tipologia, "Dimensão Principal", f"{area} m²"]], colwidths=[100, 150, 110, 140])
     t1.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#F7FAFC")), ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor("#E2E8F0")), ('PADDING', (0,0), (-1,-1), 5)]))
     story.append(t1)
     t2 = Table([
@@ -58,7 +58,7 @@ def gerar_laudo_pdf_ia(tenant, tipologia, area, valores, model_stats, status_jur
         ["Margem Mínima de Segurança", f"R$ {valores['v_min']:,.2f}"],
         ["Valor de Face Estimado", f"R$ {valores['v_medio']:,.2f}"],
         ["Limite de Mercado Máximo", f"R$ {valores['v_max']:,.2f}"]
-    ], colWidths=)
+    ], colwidths=[260, 240])
     t2.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), colors.HexColor("#2B6CB0")), ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke), ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor("#CBD5E0")), ('PADDING', (0,0), (-1,-1), 5)]))
     story.append(t2)
     story.append(Spacer(1, 5))
