@@ -168,15 +168,17 @@ with aba_avm:
 
 with aba_juridico:
     st.subheader("Esteira de Análise de Risco Documental")
+    
     if "STANDARD" in plano_assinatura:
         st.error("🔒 Recurso Bloqueado para o Plano Atual")
         st.info("💡 Aviso Comercial: O módulo de leitura jurídica via IA é exclusivo para o plano ENTERPRISE.")
     else:
         st.markdown("### 📜 Upload da Certidão / Matrícula do Imóvel")
         arquivo_matricula = st.file_uploader("Suba aqui um arquivo de texto (.txt) contendo a matrícula.", type=["txt"])
+        
         if arquivo_matricula is not None:
             texto_exibicao = arquivo_matricula.read().decode("utf-8")
-            st.success(f"🟩 Certidão '{arquivo_matricula.name}' carregada!")
+            st.success(f"🟩 Certidão '{arquivo_matricula.name}' carregada com sucesso!")
         else:
             texto_exibicao = "MATRÍCULA Nº 15.234. PROPRIETÁRIO: João da Silva Sauro... R-3: PENHORA JUDICIAL ativa..."
             
@@ -190,3 +192,20 @@ with aba_juridico:
             
             if has_penhora or has_indisponibilidade:
                 st.session_state.status_juridico_global = False
+                st.session_state.score_juridico_global = "ALTO RISCO (Imóvel Penhorado)"
+                
+                # --- EXIBE OS ALERTAS DIRETAMENTE NA TELA ---
+                st.error("❌ GARANTIA JURÍDICA REJEITADA")
+                st.metric(label="Score de Risco Legal", value="ALTO RISCO (Bloqueio)")
+                st.warning("⚠️ **Bloqueio Regulatório:** Foi detectado um gravame ativo de Penhora/Indisponibilidade no documento. Esta garantia não atende aos critérios mínimos de risco do SFN.")
+            else:
+                st.session_state.status_juridico_global = True
+                st.session_state.score_juridico_global = "BAIXO RISCO (Aprovado)"
+                
+                # --- EXIBE OS ALERTAS DIRETAMENTE NA TELA ---
+                st.success("✅ IMÓVEL LIMPO E DESEMBARAÇADO")
+                st.metric(label="Score de Risco Legal", value="BAIXO RISCO")
+                st.info("💡 **Garantia Homologada:** O imóvel está livre de ônus e restrições graves na matrícula.")
+
+st.divider()
+st.caption("🔒 Plataforma AVM SaaS v1.3.0 | Criptografia ativa e em conformidade com as normas do Bacen.")
