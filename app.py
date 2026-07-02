@@ -64,7 +64,7 @@ def gerar_grafico_mercado(df_saneado, area_alvo, valor_estimado_m2):
 # =====================================================================
 st.title("🏢 Painel Avançado de Engenharia Imobiliária SaaS")
 st.markdown("Gestão automatizada de risco imobiliário por Inteligência Artificial (Random Forest).")
-st.hr()
+st.divider()
 
 st.sidebar.header("🔑 Assinatura e Faturamento")
 tenant_selecionado = st.sidebar.selectbox("Cliente Institucional", ["001 - Banco Alfa S.A.", "002 - Imobiliária Local Ltda"])
