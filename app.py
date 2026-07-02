@@ -69,7 +69,7 @@ st.divider()
 st.sidebar.header("🔑 Assinatura e Faturamento")
 tenant_selecionado = st.sidebar.selectbox("Cliente Institucional", ["001 - Banco Alfa S.A.", "002 - Imobiliária Local Ltda"])
 
-if "Banco Alfa" in tenant_selecionado:
+if "Alfa" in tenant_selecionado:
     plano_assinatura = "ENTERPRISE"
     limite_consultas = "Ilimitado"
     cor_plano = "🟢"
