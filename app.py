@@ -119,9 +119,7 @@ st.divider()
 
 st.sidebar.header("🔑 Assinatura e Faturamento")
 tenant_selecionado = st.sidebar.selectbox("Cliente Institucional", ["001 - Banco Alfa S.A.", "002 - Imobiliária Local Ltda"])
-plano_assinatura = "ENTERPRISE" if "Alfa" in tenant_selecionado else "STANDARD"
-
-st.sidebar.markdown(f"**Plano Contratado:** {'🟢 ENTERPRISE' if plano_assinatura == 'ENTERPRISE' else '🟡 STANDARD'}")
+st.sidebar.markdown("**Plano Contratado:** 🟢 ENTERPRISE (Acesso Total Liberado)")
 
 aba_avm, aba_juridico = st.tabs(["📊 1. Avaliação Estatística por IA (AVM)", "📜 2. Análise Jurídica"])
 
@@ -180,4 +178,6 @@ with aba_avm:
     
     if st.button("🚀 Calcular Avaliação por Inteligência Artificial"):
         tipologia_limpa = tipologia_sel.replace("🏡 ", "").replace("🏢 ", "").replace("📐 ", "").replace("🏭 ", "").strip()
+        df_local_processamento = df_global.copy()
         
+        if 'tipologia' in df_local_processamento.columns:
