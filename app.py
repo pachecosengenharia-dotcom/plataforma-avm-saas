@@ -163,44 +163,44 @@ with aba_avm:
     with col3:
         padrao = st.selectbox("Padrão Construtivo do Bem", ["Baixo (ID: 1)", "Normal (ID: 2)", "Alto (ID: 3)"], index=1)
 
-            if st.button("🚀 Calcular Avaliação do Imóvel"):
-        q1 = df_mercado['valor_unitario_m2'].quantile(0.25)
-        q3 = df_mercado['valor_unitario_m2'].quantile(0.75)
-        iqr = q3 - q1
-        df_saneado = df_mercado[(df_mercado['valor_unitario_m2'] >= q1 - 1.5*iqr) & (df_mercado['valor_unitario_m2'] <= q3 + 1.5*iqr)]
-        Y = df_saneado['valor_unitario_m2']
-        X = df_saneado[['area_privativa']]
-        X = sm.add_constant(X)
-        modelo = sm.OLS(Y, X).fit()
-        vetor_alvo = [1, area_alvo]
-        prstd, iv_l, iv_u = wls_prediction_std(modelo, exog=[vetor_alvo], alpha=0.05)
-        preco_m2_calc = float(modelo.predict([vetor_alvo])[0])
-        valor_final_calc = preco_m2_calc * area_alvo
-        v_min_calc = float(iv_l[0]) * area_alvo
-        v_max_calc = float(iv_u[0]) * area_alvo
-        r2_calc = f"{modelo.rsquared:.4f}"
-        n_amostras_calc = len(df_saneado)
-        st.success("🎯 Cálculos Realizados com Sucesso!")
-        c_v1, c_v2, c_v3 = st.columns(3)
-        c_v1.metric(label="Valor Estimado de Mercado", value=f"R$ {valor_final_calc:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
-        c_v2.metric(label="Mínimo Admissível (Margem LTV)", value=f"R$ {v_min_calc:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
-        c_v3.metric(label="Máximo Admissível", value=f"R$ {v_max_calc:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
-        st.markdown("### 📈 Indicadores de Governança do Modelo")
-        m1, m2, m3 = st.columns(3)
-        m1.metric("Precisão do Modelo (R²)", r2_calc)
-        m2.metric("Amostras Brutas Lidas", f"{len(df_mercado)} imóveis")
-        m3.metric("Amostras Homologadas (Pós-IQR)", f"{n_amostras_calc} imóveis")
-        st.markdown("### 📥 Emissão de Relatório Certificado")
-        pdf_data = gerar_laudo_pdf(
-            tenant_selecionado, area_alvo, quartos, padrao, 
-            valor_final_calc, v_min_calc, v_max_calc,
-            r2_calc, n_amostras_calc,
-            status_juridico=st.session_state.status_juridico_global, 
-            score_juridico=st.session_state.score_juridico_global
-        )
-        st.download_button(
-            label="📄 Baixar Laudo de Avaliação Consolidado (PDF)",
-            data=pdf_data,
-            file_name="laudo_oficial_cmn_4676.pdf",
-            mime="application/pdf"
-        )
+    if st.button("🚀 Calcular Avaliação do Imóvel"):
+    q1 = df_mercado['valor_unitario_m2'].quantile(0.25)
+    q3 = df_mercado['valor_unitario_m2'].quantile(0.75)
+    iqr = q3 - q1
+    df_saneado = df_mercado[(df_mercado['valor_unitario_m2'] >= q1 - 1.5*iqr) & (df_mercado['valor_unitario_m2'] <= q3 + 1.5*iqr)]
+    Y = df_saneado['valor_unitario_m2']
+    X = df_saneado[['area_privativa']]
+    X = sm.add_constant(X)
+    modelo = sm.OLS(Y, X).fit()
+    vetor_alvo = [1, area_alvo]
+    prstd, iv_l, iv_u = wls_prediction_std(modelo, exog=[vetor_alvo], alpha=0.05)
+    preco_m2_calc = float(modelo.predict([vetor_alvo])[0])
+    valor_final_calc = preco_m2_calc * area_alvo
+    v_min_calc = float(iv_l[0]) * area_alvo
+    v_max_calc = float(iv_u[0]) * area_alvo
+    r2_calc = f"{modelo.rsquared:.4f}"
+    n_amostras_calc = len(df_saneado)
+    st.success("🎯 Cálculos Realizados com Sucesso!")
+    c_v1, c_v2, c_v3 = st.columns(3)
+    c_v1.metric(label="Valor Estimado de Mercado", value=f"R$ {valor_final_calc:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+    c_v2.metric(label="Mínimo Admissível (Margem LTV)", value=f"R$ {v_min_calc:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+    c_v3.metric(label="Máximo Admissível", value=f"R$ {v_max_calc:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+    st.markdown("### 📈 Indicadores de Governança do Modelo")
+    m1, m2, m3 = st.columns(3)
+    m1.metric("Precisão do Modelo (R²)", r2_calc)
+    m2.metric("Amostras Brutas Lidas", f"{len(df_mercado)} imóveis")
+    m3.metric("Amostras Homologadas (Pós-IQR)", f"{n_amostras_calc} imóveis")
+    st.markdown("### 📥 Emissão de Relatório Certificado")
+    pdf_data = gerar_laudo_pdf(
+        tenant_selecionado, area_alvo, quartos, padrao, 
+        valor_final_calc, v_min_calc, v_max_calc,
+        r2_calc, n_amostras_calc,
+        status_juridico=st.session_state.status_juridico_global, 
+        score_juridico=st.session_state.score_juridico_global
+    )
+    st.download_button(
+        label="📄 Baixar Laudo de Avaliação Consolidado (PDF)",
+        data=pdf_data,
+        file_name="laudo_oficial_cmn_4676.pdf",
+        mime="application/pdf"
+    )
