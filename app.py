@@ -64,7 +64,7 @@ def gerar_laudo_pdf(tenant, area, quartos, padrao, v_estimado, v_min, v_max, r2,
 
 st.title("🏢 Painel de Crédito e Controle Multi-Tenant")
 st.markdown("Gestão de risco imobiliário integrada e barramento de faturamento SaaS por assinatura.")
-st.hr()
+st.divider()
 
 st.sidebar.header("🔑 Assinatura e Faturamento")
 tenant_selecionado = st.sidebar.selectbox("Cliente Institucional", ["001 - Banco Alfa S.A.", "002 - Imobiliária Local Ltda"])
