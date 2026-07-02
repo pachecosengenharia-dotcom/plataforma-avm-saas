@@ -163,6 +163,7 @@ with aba_avm:
     if st.button("🚀 Calcular Avaliação por Inteligência Artificial"):
         tipologia_limpa = tipologia_sel.replace("🏡 ", "").replace("🏢 ", "").replace("📐 ", "").replace("🏭 ", "").strip()
         
-        if 'tipologia' in df_global.columns:
+    if 'tipologia' in df_global.columns:
             df_global['tipologia'] = df_global['tipologia'].astype(str).str.upper().str.strip()
         else:
+            df_global['tipologia'] = "CASA"
