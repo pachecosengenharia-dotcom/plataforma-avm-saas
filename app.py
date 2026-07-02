@@ -100,7 +100,7 @@ def gerar_laudo_pdf(tenant, area, quartos, padrao, v_estimado, v_min, v_max, r2,
 # =====================================================================
 st.title("🏢 Painel de Crédito e Controle Multi-Tenant")
 st.markdown("Gestão de risco imobiliário integrada e barramento de faturamento SaaS por assinatura.")
-st.hr()
+st.divider()
 
 # PAINEL DE CONTROLE DE FATURAMENTO SAAS (BARRA LATERAL)
 st.sidebar.header("🔑 Assinatura e Faturamento")
