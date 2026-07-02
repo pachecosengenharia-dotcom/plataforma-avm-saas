@@ -184,6 +184,7 @@ with aba_avm:
         st.session_state.r2 = f"{modelo.rsquared:.4f}"
         st.session_state.n_amostras = len(df_saneado)
         st.session_state.avm_calculado = True
+        st.rerun()
 
     if st.session_state.avm_calculado:
         st.success("🎯 Cálculos Realizados!")
