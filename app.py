@@ -12,6 +12,9 @@ import matplotlib.pyplot as plt
 
 st.set_page_config(page_title="Plataforma AVM SaaS - Multi-Tipologia", page_icon="🏢", layout="wide")
 
+# =====================================================================
+# BASE DE DADOS COMPACTA PARA CÁLCULOS RIGOROSOS DE IA
+# =====================================================================
 @st.cache_data
 def carregar_base_multitipologia_padrao():
     dados = [
@@ -27,6 +30,9 @@ def carregar_base_multitipologia_padrao():
     ]
     return pd.DataFrame(dados, columns=['valor_total_declarado', 'valor_unitario_m2', 'area_privativa', 'indice_fiscal', 'area_terreno', 'vagas_garagem', 'andar', 'pe_direito', 'tipologia'])
 
+# =====================================================================
+# GERADOR DE GRÁFICO IMOBILIÁRIO (Matplotlib)
+# =====================================================================
 def gerar_grafico_mercado(df_saneado, area_alvo, valor_estimado_m2):
     fig, ax = plt.subplots(figsize=(6, 3))
     ax.scatter(df_saneado['area_privativa'], df_saneado['valor_unitario_m2'], color='#2B6CB0', alpha=0.7, label='Amostras')
@@ -40,6 +46,9 @@ def gerar_grafico_mercado(df_saneado, area_alvo, valor_estimado_m2):
     plt.close(fig)
     return img_buf
 
+# =====================================================================
+# LAUDO CERTIFICADO COMPLETO EM PDF (ABNT NBR 14653)
+# =====================================================================
 def gerar_laudo_pdf_ia(tenant, tipologia, area, valores, model_stats, status_juridico, score_juridico, grafico_buf):
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=40)
@@ -47,26 +56,34 @@ def gerar_laudo_pdf_ia(tenant, tipologia, area, valores, model_stats, status_jur
     styles = getSampleStyleSheet()
     title_style = ParagraphStyle('T1', parent=styles['Heading1'], fontSize=16, textColor=colors.HexColor("#1A365D"), spaceAfter=15)
     text_style = ParagraphStyle('T3', parent=styles['Normal'], fontSize=9, leading=13, spaceAfter=6)
+    
     story.append(Paragraph(f"LAUDO TECNICO CORE AVM - IA ({tipologia})", title_style))
-    story.append(Paragraph(f"<b>Análise Concluída para:</b> {tenant}", text_style))
+    story.append(Paragraph(f"<b>Instituicao Solicitante:</b> {tenant}", text_style))
     story.append(Spacer(1, 10))
-  t1 = Table([["Tipologia do Bem", tipologia, "Dimensao Principal", f"{area} m²"]], colwidths=[130, 110, 130, 110])
+    
+    # Linhas com colwidths totalmente preenchidos e corrigidos em minúsculo
+    t1 = Table([["Tipologia do Bem", tipologia, "Dimensao Principal", f"{area} m²"]], colwidths=[130, 110, 130, 110])
     t1.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#F7FAFC")), ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor("#E2E8F0")), ('PADDING', (0,0), (-1,-1), 5)]))
     story.append(t1)
+    
     t2 = Table([
         ["Metrica de Cobertura do Risco", "Valor Comercial Admissivel"],
         ["Margem Minima de Seguranca", f"R$ {valores['v_min']:,.2f}"],
         ["Valor de Face Estimado", f"R$ {valores['v_medio']:,.2f}"],
         ["Limite de Mercado Maximo", f"R$ {valores['v_max']:,.2f}"]
-    ], colwidths=[200, 200])
+    ], colwidths=[240, 240])
     t2.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), colors.HexColor("#2B6CB0")), ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke), ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor("#CBD5E0")), ('PADDING', (0,0), (-1,-1), 5)]))
     story.append(t2)
+    
     story.append(Spacer(1, 5))
     story.append(Image(grafico_buf, width=320, height=160))
     doc.build(story)
     buffer.seek(0)
     return buffer.getvalue()
 
+# =====================================================================
+# INTERFACE PRINCIPAL DO PAINEL SAAS
+# =====================================================================
 st.title("🏢 Painel Avancado de Engenharia Imobiliaria SaaS")
 st.markdown("Gestao automatizada de risco imobiliario por Inteligencia Artificial (Random Forest).")
 st.divider()
@@ -132,7 +149,6 @@ with aba_avm:
         model_ia = RandomForestRegressor(n_estimators=100, random_state=42)
         model_ia.fit(X, Y)
         
-        # --- BLOCO UNIFICADO COMPACTO DE FLUXO DIRETO CONTRA ERROS DE TRADUÇÃO ---
         v_alvo = [area_alvo, indice_alvo, area_terreno_valor, vagas_valor, andar_valor, pe_direito_valor]
         p_m2 = float(model_ia.predict([v_alvo]))
         v_medio = p_m2 * area_alvo
@@ -156,15 +172,3 @@ with aba_avm:
         cv1, cv2, cv3 = st.columns(3)
         cv1.metric(label="Valor Estimado de Mercado (Media)", value=f"R$ {dados_calc['valor_medio']:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
         cv2.metric(label="Minimo Admissivel (Garantia LTV)", value=f"R$ {dados_calc['v_min']:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
-        cv3.metric(label="Maximo Admissivel", value=f"R$ {dados_calc['v_max']:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
-        
-        st.markdown("### 📋 Enquadramento Normativo e Performance da IA")
-        m1, m2, m3 = st.columns(3)
-        m1.metric("Precisao das Arvores de Decisao (R²)", dados_calc['r2_score'])
-        m2.metric("Amostras Brutas Lidas", f"{dados_calc['brutas']} {dados_calc['tipologia_limpa']}s")
-        m3.metric("Amostras Homologadas (Pos-IQR)", f"{dados_calc['saneadas']} {dados_calc['tipologia_limpa']}s")
-        
-        grafico_buf = gerar_grafico_mercado(dados_calc['df_saneado'], dados_calc['area_alvo'], dados_calc['preco_m2_pred'])
-        st.image(grafico_buf, caption="Grafico de Dispersao Espacial do Mercado de Goiania")
-        
-        model_stats = {"r2": dados_calc['r2_score'], "saneadas": dados_calc['saneadas']}
