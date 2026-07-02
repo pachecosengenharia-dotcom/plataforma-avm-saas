@@ -127,7 +127,7 @@ def gerar_laudo_cientifico_pdf(tenant, area, terreno, fiscal, valores, model_sta
 # =====================================================================
 st.title("🏢 Painel Avançado de Engenharia Imobiliária SaaS")
 st.markdown("Cálculos científicos por Inferência Estatística em conformidade estrita com a NBR 14653-2.")
-st.hr()
+st.divider()
 
 st.sidebar.header("🔑 Acesso Multi-Tenant")
 tenant_selecionado = st.sidebar.selectbox("Cliente", ["001 - Banco Alfa S.A.", "002 - Imobiliária Local Ltda"])
