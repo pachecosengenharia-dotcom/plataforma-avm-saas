@@ -177,10 +177,10 @@ with aba_avm:
         vetor_alvo = [1, area_alvo]
         prstd, iv_l, iv_u = wls_prediction_std(modelo, exog=[vetor_alvo], alpha=0.05)
         
-        st.session_state.preco_m2 = float(modelo.predict([vetor_alvo]))
+        st.session_state.preco_m2 = float(modelo.predict([vetor_alvo])[0])
         st.session_state.valor_final = st.session_state.preco_m2 * area_alvo
-        st.session_state.v_min = float(iv_l) * area_alvo
-        st.session_state.v_max = float(iv_u) * area_alvo
+        st.session_state.v_min = float(iv_l[0]) * area_alvo
+        st.session_state.v_max = float(iv_u[0]) * area_alvo
         st.session_state.r2 = f"{modelo.rsquared:.4f}"
         st.session_state.n_amostras = len(df_saneado)
         st.session_state.avm_calculado = True
