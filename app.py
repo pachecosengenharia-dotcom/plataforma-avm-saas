@@ -1,94 +1,136 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
 import json
+from sklearn.ensemble import RandomForestRegressor
 import statsmodels.api as sm
 from statsmodels.sandbox.regression.predstd import wls_prediction_std
 from reportlab.lib.pagesizes import letter
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 import io
+import matplotlib.pyplot as plt
 
-st.set_page_config(page_title="Plataforma AVM SaaS - Casas", page_icon="🏢", layout="wide")
+st.set_page_config(page_title="Plataforma AVM SaaS - Engenharia", page_icon="🏢", layout="wide")
 
+# =====================================================================
+# BASE DE DADOS COMPACTA PARA CÁLCULOS REGRESSIVOS RIGOROSOS
+# =====================================================================
 @st.cache_data
-def base_dados_padrao():
-    # Base padrão de casas simulada com Índice Fiscal
-    # Colunas: total, unitario, area_construida, quartos, padrao, area_terreno, indice_fiscal
+def carregar_base_casas_goiania():
     dados = [
-        (450000, 6000, 75,  2, 2, 200, 1), (480000, 6153, 78,  2, 2, 220, 1), (430000, 5972, 72,  2, 2, 200, 1),
-        (510000, 6375, 80,  2, 2, 250, 1), (460000, 6133, 75,  2, 2, 210, 1), (390000, 5571, 70,  2, 2, 180, 2),
-        (750000, 8823, 85,  3, 3, 360, 2), (820000, 8913, 92,  3, 3, 400, 2), (790000, 8777, 90,  3, 3, 380, 2),
-        (1200000, 12000, 100, 3, 3, 450, 3), (250000, 2500, 100, 2, 1, 200, 4)
+        (450000, 6000, 75,  200, 1200, "CASA"), (480000, 6153, 78,  220, 1250, "CASA"), 
+        (430000, 5972, 72,  200, 1150, "CASA"), (510000, 6375, 80,  250, 1300, "CASA"), 
+        (460000, 6133, 75,  210, 1220, "CASA"), (390000, 5571, 70,  180, 950,  "CASA"),
+        (750000, 8823, 85,  360, 3200, "CASA"), (820000, 8913, 92,  400, 3300, "CASA"), 
+        (790000, 8777, 90,  380, 3100, "CASA"), (1200000, 12000, 100, 450, 4800, "CASA"), 
+        (250000, 2500, 100, 200, 400,  "CASA")
     ]
-    return pd.DataFrame(dados, columns=['valor_total_declarado', 'valor_unitario_m2', 'area_privativa', 'qtd_quartos', 'padrao_construtivo_id', 'area_terreno', 'indice_fiscal'])
+    return pd.DataFrame(dados, columns=['valor_total_declarado', 'valor_unitario_m2', 'area_privativa', 'area_terreno', 'indice_fiscal', 'tipologia'])
 
-def gerar_laudo_pdf(tenant, area, quartos, padrao, terreno, indice_fiscal, v_estimado, v_min, v_max, r2, n_amostras, status_juridico, score_juridico):
-    buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=40)
-    story = []
-    styles = getSampleStyleSheet()
-    title_style = ParagraphStyle('T1', parent=styles['Heading1'], fontSize=18, textColor=colors.HexColor("#1A365D"), spaceAfter=15)
-    subtitle_style = ParagraphStyle('T2', parent=styles['Heading2'], fontSize=12, textColor=colors.HexColor("#2B6CB0"), spaceAfter=8)
-    text_style = ParagraphStyle('T3', parent=styles['Normal'], fontSize=9, leading=13, spaceAfter=6)
+# =====================================================================
+# GERADOR DE GRÁFICO IMOBILIÁRIO (Matplotlib para PDF)
+# =====================================================================
+def gerar_grafico_mercado(df_saneado, area_alvo, valor_estimado_m2):
+    fig, ax = plt.subplots(figsize=(6, 3))
+    ax.scatter(df_saneado['area_privativa'], df_saneado['valor_unitario_m2'], color='#2B6CB0', alpha=0.7, label='Amostras Homologadas')
+    ax.scatter(area_alvo, valor_estimado_m2, color='#E53E3E', marker='*', s=150, label='Imóvel Avaliado')
+    ax.set_title('Dispersão do Mercado (Área vs Preço m²)', fontsize=10, fontweight='bold', color='#1A365D')
+    ax.set_xlabel('Área Construída Privativa (m²)', fontsize=8)
+    ax.set_ylabel('Preço Unitário (R$/m²)', fontsize=8)
+    ax.grid(True, linestyle='--', alpha=0.5)
+    ax.legend(fontsize=7, loc='best')
+    plt.tight_layout()
     
-    story.append(Paragraph("LAUDO TÉCNICO E LEGAL DE GARANTIA IMOBILIÁRIA (AVM - CASAS)", title_style))
-    story.append(Paragraph(f"<b>Instituição Solicitante:</b> {tenant}", text_style))
-    story.append(Paragraph("<b>Normativos:</b> Resoluções CMN nº 4.676/2018 e nº 4.925/2021 (Bacen) | ABNT NBR 14653-2", text_style))
+    img_buf = io.BytesIO()
+    plt.savefig(img_buf, format='png', dpi=200)
+    img_buf.seek(0)
+    plt.close(fig)
+    return img_buf
+
+# =====================================================================
+# LAUDO CERTIFICADO COMPLETO (ABNT NBR 14653)
+# =====================================================================
+def gerar_laudo_cientifico_pdf(tenant, area, terreno, fiscal, valores, model_stats, status_jur, score_jur, num_amostras, grafico_buf):
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=35, leftMargin=35, topMargin=35, bottomMargin=35)
+    story = []
+    
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle('T1', parent=styles['Heading1'], fontSize=16, textColor=colors.HexColor("#1A365D"), spaceAfter=12)
+    subtitle_style = ParagraphStyle('T2', parent=styles['Heading2'], fontSize=11, textColor=colors.HexColor("#2B6CB0"), spaceAfter=6)
+    text_style = ParagraphStyle('T3', parent=styles['Normal'], fontSize=8.5, leading=12, spaceAfter=5)
+    
+    story.append(Paragraph("LAUDO TÉCNICO DE ENGENHARIA DE AVALIAÇÕES", title_style))
+    story.append(Paragraph(f"<b>Instituição Solicitante:</b> {tenant} | <b>Normativa:</b> ABNT NBR 14653-2 e Resoluções CMN", text_style))
     story.append(Spacer(1, 10))
     
-    story.append(Paragraph("1. Dados do Imóvel Horizontal Solicitado", subtitle_style))
-    dados_imovel = [
-        ["Área Construída", f"{area} m²", "Quantidade de Quartos", f"{quartos}"],
-        ["Área do Terreno", f"{terreno} m²", "Índice Fiscal (Zonamento)", f"Zona {indice_fiscal}"],
-        ["Padrão Construtivo", f"{padrao}", "Tipologia do Bem", "Casa / Imóvel Horizontal"]
-    ]
-    t1 = Table(dados_imovel, colWidths=[130, 130, 130, 130])
+    # Seção 1: Dados do Imóvel
+    story.append(Paragraph("1. Identificação da Garantia Alvo", subtitle_style))
+    t1 = Table([
+        ["Área Construída", f"{area} m²", "Área do Terreno", f"{terreno} m²"],
+        ["Índice Fiscal", f"{fiscal:.2f}", "Tipologia Imóvel", "Casa Horizontal"]
+    ], colWidths=)
     t1.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#F7FAFC")), ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor("#E2E8F0")), ('PADDING', (0,0), (-1,-1), 4)]))
     story.append(t1)
+    story.append(Spacer(1, 10))
     
-    story.append(Paragraph("2. Avaliação Estatística e Intervalos de Confiança (95%)", subtitle_style))
+    # Seção 2: Resultados do AVM
+    story.append(Paragraph("2. Avaliação Econômica e Intervalo de Predição (Confiança 95%)", subtitle_style))
     t2 = Table([
-        ["Métrica de Garantia", "Valor Total Admissível"],
-        ["Limite Mínimo Admissível (Margem LTV)", f"R$ {v_min:,.2f}"],
-        ["Valor Médio Estimado de Mercado", f"R$ {v_estimado:,.2f}"],
-        ["Limite Máximo Admissível", f"R$ {v_max:,.2f}"]
-    ], colWidths=[260, 260])
-    t2.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), colors.HexColor("#2B6CB0")), ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke), ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor("#CBD5E0")), ('PADDING', (0,0), (-1,-1), 5)]))
+        ["Métrica de Cobertura do Risco", "Valor do m² Construído", "Valor Total Admissível"],
+        ["Limite Inferior Admissível (LTV)", f"R$ {valores['v_min']/area:,.2f}", f"R$ {valores['v_min']:,.2f}"],
+        ["Valor Médio Estimado de Mercado", f"R$ {valores['v_medio']/area:,.2f}", f"R$ {valores['v_medio']:,.2f}"],
+        ["Limite Superior Admissível", f"R$ {valores['v_max']/area:,.2f}", f"R$ {valores['v_max']:,.2f}"]
+    ], colWidths=)
+    t2.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), colors.HexColor("#2B6CB0")), ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke), ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor("#CBD5E0")), ('PADDING', (0,0), (-1,-1), 5), ('BACKGROUND', (0,2), (-1,2), colors.HexColor("#EBF8FF"))]))
     story.append(t2)
+    story.append(Spacer(1, 10))
     
-    story.append(Paragraph("3. Status da Esteira de Risco Jurídico", subtitle_style))
-    t3 = Table([
-        ["Validação Cadastral", "APROVADO" if status_juridico else "REPROVADO / BLOQUEADO"],
-        ["Classificação de Risco Legal", score_juridico]
-    ], colWidths=[260, 260])
-    t3.setStyle(TableStyle([('GRID', (0,0), (-1,-1), 0.5, colors.HexColor("#CBD5E0")), ('PADDING', (0,0), (-1,-1), 5), ('TEXTCOLOR', (1,0), (1,0), colors.HexColor("#38A169") if status_juridico else colors.HexColor("#E53E3E"))]))
+    # Seção 3: Equação e Gráfico (Mágica Visual no PDF)
+    story.append(Paragraph("3. Diagnóstico do Modelo de Inferência Estatística", subtitle_style))
+    story.append(Paragraph(f"<b>Equação de Regressão Gerada:</b> {model_stats['equacao']}", text_style))
+    story.append(Spacer(1, 5))
+    
+    # Insere o gráfico gerado dinamicamente
+    story.append(Image(grafico_buf, width=320, height=160))
+    story.append(Spacer(1, 10))
+    
+    # Seção 4: Enquadramento de Graus da NBR 14653-2
+    story.append(Paragraph("4. Enquadramento de Graus de Rigor (ABNT NBR 14653-2)", subtitle_style))
+    t_grau = Table([
+        ["Critério Avaliado", "Métrica do Modelo", "Grau Enquadrado"],
+        ["Quantidade Mínima de Amostras", f"{num_amostras} Imóveis", model_stats['grau_amostras']],
+        ["Coeficiente de Determinação (R²)", f"{model_stats['r2']}", model_stats['grau_r2']],
+        ["Amplitude do Intervalo (Precisão)", f"{model_stats['amplitude']}%", model_stats['grau_precisao']]
+    ], colWidths=)
+    t_grau.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), colors.HexColor("#4A5568")), ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke), ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor("#CBD5E0")), ('PADDING', (0,0), (-1,-1), 4)]))
+    story.append(t_grau)
+    story.append(Spacer(1, 10))
+    
+    # Seção 5: Compliance Jurídico
+    story.append(Paragraph("5. Homologação da Esteira de Risco Legal", subtitle_style))
+    t3 = Table([["Status Documental", "APROVADO PARA GARANTIA" if status_jur else "REPROVADO / BLOQUEADO"], ["Grau de Risco Matricial", score_jur]], colWidths=)
+    t3.setStyle(TableStyle([('GRID', (0,0), (-1,-1), 0.5, colors.HexColor("#CBD5E0")), ('PADDING', (0,0), (-1,-1), 5), ('TEXTCOLOR', (1,0), (1,0), colors.HexColor("#38A169") if status_jur else colors.HexColor("#E53E3E"))]))
     story.append(t3)
     
     doc.build(story)
     buffer.seek(0)
     return buffer.getvalue()
 
-st.title("🏢 Painel de Crédito e Controle Multi-Tenant - Módulo Casas")
-st.markdown("Gestão de risco imobiliário horizontal e barramento de faturamento SaaS por assinatura.")
-st.divider()
+# =====================================================================
+# INTERFACE DO STREAMLIT
+# =====================================================================
+st.title("🏢 Painel Avançado de Engenharia Imobiliária SaaS")
+st.markdown("Cálculos científicos por Inferência Estatística em conformidade estrita com a NBR 14653-2.")
+st.hr()
 
-st.sidebar.header("🔑 Assinatura e Faturamento")
-tenant_selecionado = st.sidebar.selectbox("Cliente Institucional", ["001 - Banco Alfa S.A.", "002 - Imobiliária Local Ltda"])
+st.sidebar.header("🔑 Acesso Multi-Tenant")
+tenant_selecionado = st.sidebar.selectbox("Cliente", ["001 - Banco Alfa S.A.", "002 - Imobiliária Local Ltda"])
+plano_assinatura = "ENTERPRISE" if "Alfa" in tenant_selecionado else "STANDARD"
 
-if "Alfa" in tenant_selecionado:
-    plano_assinatura = "ENTERPRISE"
-    limite_consultas = "Ilimitado"
-    cor_plano = "🟢"
-else:
-    plano_assinatura = "STANDARD (Apenas AVM)"
-    limite_consultas = "Restam 4 consultas no mês"
-    cor_plano = "🟡"
-
-st.sidebar.markdown(f"**Plano Contratado:** {cor_plano} {plano_assinatura}")
-st.sidebar.markdown(f"**Limitação de Uso:** {limite_consultas}")
-
-aba_avm, aba_juridico = st.tabs(["📊 1. Avaliação Estatística (AVM)", "📜 2. Análise Jurídica da Matrícula"])
+aba_avm, aba_juridico = st.tabs(["📊 1. Avaliação Normatizada", "📜 2. Análise Jurídica"])
 
 if 'status_juridico_global' not in st.session_state:
     st.session_state.status_juridico_global = True
@@ -96,87 +138,37 @@ if 'score_juridico_global' not in st.session_state:
     st.session_state.score_juridico_global = "PENDENTE"
 
 with aba_avm:
-    st.subheader("Simulador de Garantia Imobiliária para Imóveis Horizontais")
-    st.markdown("### 💾 Upload da Base de Dados de Casas")
-    arquivo_planilha = st.file_uploader("Arraste e solte aqui a planilha de mercado de casas contendo as colunas 'area_terreno' e 'indice_fiscal'.", type=["xlsx", "csv"])
+    st.subheader("Base de Dados de Casas (Goiânia)")
+    arquivo_planilha = st.file_uploader("Suba a planilha com as colunas 'area_terreno' e 'indice_fiscal'", type=["xlsx", "csv"])
+    df_mercado = carregar_base_casas_goiania() if arquivo_planilha is None else (pd.read_csv(arquivo_planilha) if arquivo_planilha.name.endswith('.csv') else pd.read_excel(arquivo_planilha))
     
-    if arquivo_planilha is not None:
-        try:
-            if arquivo_planilha.name.endswith('.csv'):
-                df_mercado = pd.read_csv(arquivo_planilha)
-            else:
-                df_mercado = pd.read_excel(arquivo_planilha)
-            st.success(f"🟩 Planilha de casas '{arquivo_planilha.name}' carregada com sucesso!")
-        except Exception as e:
-            st.error(f"Erro ao ler o arquivo: {e}")
-            df_mercado = base_dados_padrao()
-    else:
-        st.info("💡 Modo de Demonstração: Utilizando a base padrão de casas embutida.")
-        df_mercado = base_dados_padrao()
-        
     st.write("---")
-    st.markdown("#### Características da Casa Alvo")
-    
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        area_alvo = st.number_input("Área Construída Privativa (m²)", min_value=10.0, max_value=1000.0, value=75.0, step=1.0)
-        area_terreno_alvo = st.number_input("Área Total do Terreno (m²)", min_value=50.0, max_value=5000.0, value=200.0, step=10.0)
-    with col2:
-        quartos = st.slider("Quantidade de Quartos", 1, 6, 2)
-        # RECURSO DE IMPACTO: Campo numérico de entrada direta do Índice Fiscal exigido por Goiânia
-        indice_fiscal_alvo = st.number_input("Índice Fiscal Atual da Prefeitura", min_value=0.0, value=100.0, step=10.0, format="%.2f")
-        padrao = st.selectbox("Padrão Construtivo da Casa", ["Baixo (ID: 1)", "Normal (ID: 2)", "Alto (ID: 3)"], index=1)
+    st.markdown("#### Atributos do Imóvel Avaliado")
+    col1, col2 = st.columns(2)
+    area_alvo = col1.number_input("Área Construída Privativa (m²)", min_value=10.0, value=75.0)
+    area_terreno_alvo = col1.number_input("Área Total do Terreno (m²)", min_value=10.0, value=200.0)
+    indice_fiscal_alvo = col2.number_input("Índice Fiscal da Quadra", min_value=0.0, value=1200.0)
+    padrao = col2.selectbox("Padrão Construtivo", ["Baixo", "Normal", "Alto"], index=1)
 
-    if st.button("🚀 Calcular Avaliação da Casa"):
+    if st.button("🚀 Calcular Avaliação Científica NBR"):
+        # Saneamento IQR
         q1 = df_mercado['valor_unitario_m2'].quantile(0.25)
         q3 = df_mercado['valor_unitario_m2'].quantile(0.75)
         iqr = q3 - q1
-        df_saneado = df_mercado[(df_mercado['valor_unitario_m2'] >= q1 - 1.5*iqr) & (df_mercado['valor_unitario_m2'] <= q3 + 1.5*iqr)]
+        df_saneado = df_mercado[(df_mercado['valor_unitario_m2'] >= q1 - 1.5*iqr) & (df_mercado['valor_unitario_m2'] <= q3 + 1.5*iqr)].copy()
         
+        # Regressão Linear Múltipla Científica (Mínimos Quadrados)
         Y = df_saneado['valor_unitario_m2']
-        # ENTRADA DE VARIÁVEL COMPLIANCE: O modelo agora processa o 'indice_fiscal' de Goiânia como vetor contínuo
         X = df_saneado[['area_privativa', 'area_terreno', 'indice_fiscal']]
         X = sm.add_constant(X)
         modelo = sm.OLS(Y, X).fit()
         
+        # Predição e Intervalos com 95% de Confiança (NBR 14653)
         vetor_alvo = [1, area_alvo, area_terreno_alvo, float(indice_fiscal_alvo)]
         prstd, iv_l, iv_u = wls_prediction_std(modelo, exog=[vetor_alvo], alpha=0.05)
         
-        preco_m2_calc = float(modelo.predict([vetor_alvo])[0])
-        valor_final_calc = preco_m2_calc * area_alvo
-        v_min_calc = float(iv_l[0]) * area_alvo
-        v_max_calc = float(iv_u[0]) * area_alvo
-        r2_calc = f"{modelo.rsquared:.4f}"
-        n_amostras_calc = len(df_saneado)
+        preco_m2 = float(modelo.predict([vetor_alvo]))
+        v_estimado = preco_m2 * area_alvo
+        v_min = float(iv_l) * area_alvo
+        v_max = float(iv_u) * area_alvo
         
-        st.success("🎯 Cálculos Realizados com Sucesso para o Mercado de Casas!")
-        c_v1, c_v2, c_v3 = st.columns(3)
-        c_v1.metric(label="Valor Estimado de Mercado", value=f"R$ {valor_final_calc:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
-        c_v2.metric(label="Mínimo Admissível (Margem LTV)", value=f"R$ {v_min_calc:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
-        c_v3.metric(label="Máximo Admissível", value=f"R$ {v_max_calc:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
-        
-        st.markdown("### 📈 Indicadores de Governança do Modelo (NBR 14653)")
-        m1, m2, m3 = st.columns(3)
-        m1.metric("Precisão do Modelo (R²)", r2_calc)
-        m2.metric("Amostras Brutas Lidas", f"{len(df_mercado)} casas")
-        m3.metric("Amostras Homologadas (Pós-IQR)", f"{n_amostras_calc} casas")
-        
-        st.markdown("### 📥 Emissão de Relatório Certificado")
-        pdf_data = gerar_laudo_pdf(
-            tenant_selecionado, area_alvo, quartos, padrao, area_terreno_alvo, indice_fiscal_alvo,
-            valor_final_calc, v_min_calc, v_max_calc,
-            r2_calc, n_amostras_calc,
-            status_juridico=st.session_state.status_juridico_global, 
-            score_juridico=st.session_state.score_juridico_global
-        )
-        st.download_button(
-            label="📄 Baixar Laudo de Avaliação Consolidado (PDF)",
-            data=pdf_data,
-            file_name="laudo_casas_oficial.pdf",
-            mime="application/pdf"
-        )
-
-with aba_juridico:
-    st.subheader("Esteira de Análise de Risco Documental")
-    if "STANDARD" in plano_assinatura:
-        st.error("🔒 Recurso Bloqueado para o Plano Atual")
