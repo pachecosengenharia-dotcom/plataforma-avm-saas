@@ -2,3 +2,5 @@ pandas
 statsmodels
 reportlab
 openpyxl
+scikit-learn
+matplotlib
