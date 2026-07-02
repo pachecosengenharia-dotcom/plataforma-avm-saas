@@ -81,7 +81,7 @@ def gerar_laudo_pdf_ia(tenant, tipologia, area, valores, model_stats, status_jur
     story.append(Spacer(1, 10))
     
     story.append(Paragraph("1. Escopo de Avaliação Imobiliária", subtitle_style))
-    t1 = Table([["Tipologia do Bem", tipologia, "Dimensão Principal", f"{area} m²"]], colWidths=[120, 120, 120, 120])
+    t1 = Table([["Tipologia do Bem", tipologia, "Dimensão Principal", f"{area} m²"]], colWidths=[130, 130, 130, 130])
     t1.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#F7FAFC")), ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor("#E2E8F0")), ('PADDING', (0,0), (-1,-1), 5)]))
     story.append(t1)
     
@@ -91,7 +91,7 @@ def gerar_laudo_pdf_ia(tenant, tipologia, area, valores, model_stats, status_jur
         ["Margem Mínima de Segurança (Garantia)", f"R$ {valores['v_min']:,.2f}"],
         ["Valor de Face Estimado (Média)", f"R$ {valores['v_medio']:,.2f}"],
         ["Limite de Mercado Máximo", f"R$ {valores['v_max']:,.2f}"]
-    ], colWidths=[240, 240])
+    ], colWidths=[260, 260])
     t2.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), colors.HexColor("#2B6CB0")), ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke), ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor("#CBD5E0")), ('PADDING', (0,0), (-1,-1), 5)]))
     story.append(t2)
     story.append(Spacer(1, 5))
@@ -102,7 +102,7 @@ def gerar_laudo_pdf_ia(tenant, tipologia, area, valores, model_stats, status_jur
     story.append(Spacer(1, 10))
     
     story.append(Paragraph("3. Status da Esteira de Risco Jurídico", subtitle_style))
-    t3 = Table([["Status Documental", "APROVADO PARA GARANTIA" if status_juridico else "REPROVADO"], ["Grau de Risco Legal", score_juridico]], colWidths=[240, 240])
+    t3 = Table([["Status Documental", "APROVADO PARA GARANTIA" if status_juridico else "REPROVADO"], ["Grau de Risco Legal", score_juridico]], colWidths=[260, 260])
     t3.setStyle(TableStyle([('GRID', (0,0), (-1,-1), 0.5, colors.HexColor("#CBD5E0")), ('PADDING', (0,0), (-1,-1), 5), ('TEXTCOLOR', (1,0), (1,0), colors.HexColor("#38A169") if status_juridico else colors.HexColor("#E53E3E"))]))
     story.append(t3)
     
@@ -127,7 +127,7 @@ aba_avm, aba_juridico = st.tabs(["📊 1. Avaliação Estatística por IA (AVM)"
 
 if 'status_juridico_global' not in st.session_state: st.session_state.status_juridico_global = True
 if 'score_juridico_global' not in st.session_state: st.session_state.score_juridico_global = "PENDENTE"
-if 'resultado_ia_guardado' not in st.session_state: st.session_state.resultado_ia_guardado = None
+if 'memorizar_calculo' not in st.session_state: st.session_state.memorizar_calculo = None
 
 with aba_avm:
     st.subheader("Configuração da Base e Modelagem")
@@ -180,3 +180,4 @@ with aba_avm:
     
     if st.button("🚀 Calcular Avaliação por Inteligência Artificial"):
         tipologia_limpa = tipologia_sel.replace("🏡 ", "").replace("🏢 ", "").replace("📐 ", "").replace("🏭 ", "").strip()
+        
