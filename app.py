@@ -175,7 +175,10 @@ with aba_avm:
             q3 = df_tipo['valor_unitario_m2'].quantile(0.75)
             iqr = q3 - q1
             df_saneado = df_tipo[(df_tipo['valor_unitario_m2'] >= q1 - 1.5*iqr) & (df_tipo['valor_unitario_m2'] <= q3 + 1.5*iqr)].copy()
-            
+            # BLINDAGEM AUTOMÁTICA: Cria colunas que faltam no Excel para evitar travamento
+            for col_nome in ['area_terreno', 'vagas_garagem', 'andar', 'pe_direito']:
+                if col_nome not in df_saneado.columns:
+                    df_saneado[col_nome] = 0.0
             features = ['area_privativa', 'indice_fiscal', 'area_terreno', 'vagas_garagem', 'andar', 'pe_direito']
             X = df_saneado[features]
             Y = df_saneado['valor_unitario_m2']
