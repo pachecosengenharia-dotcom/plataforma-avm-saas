@@ -148,7 +148,7 @@ with aba_avm:
         model_ia.fit(X, Y)
         
         # --- BLOCO EXECUTIVO DE PREDIÇÃO TOTALMENTE ANINHADO DENTRO DO BOTÃO (CORREÇÃO DO TRAVAMENTO) ---
-        vetor_pred = [area_alvo, indice_alvo, area_terreno_valor, vagas_valor, andar_valor, pe_direito_valor]
+                vetor_pred = [area_alvo, indice_alvo, area_terreno_valor, vagas_valor, andar_valor, pe_direito_valor]
         preco_m2_pred = float(model_ia.predict([vetor_pred]))
         valor_medio = preco_m2_pred * area_alvo
         
