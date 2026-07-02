@@ -124,8 +124,7 @@ with aba_avm:
     with col2:
         quartos = st.slider("Quantidade de Quartos", 1, 6, 2)
         # RECURSO DE IMPACTO: Campo numérico de entrada direta do Índice Fiscal exigido por Goiânia
-        indice_fiscal_alvo = st.number_input("Índice Fiscal da Prefeitura (Zona 1 a 4)", min_value=1, max_value=4, value=1, step=1)
-    with col3:
+        indice_fiscal_alvo = st.number_input("Índice Fiscal Atual da Prefeitura", min_value=0.0, value=100.0, step=10.0, format="%.2f")
         padrao = st.selectbox("Padrão Construtivo da Casa", ["Baixo (ID: 1)", "Normal (ID: 2)", "Alto (ID: 3)"], index=1)
 
     if st.button("🚀 Calcular Avaliação da Casa"):
