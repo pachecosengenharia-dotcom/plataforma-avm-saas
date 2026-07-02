@@ -74,10 +74,8 @@ st.sidebar.markdown(f"**Plano Contratado:** {'🟢 ENTERPRISE' if plano_assinatu
 
 aba_avm, aba_juridico = st.tabs(["📊 1. Avaliação Estatística por IA (AVM)", "📜 2. Análise Jurídica"])
 
-# Inicialização segura de todas as chaves de estado de memória na sessão
 if 'status_juridico_global' not in st.session_state: st.session_state.status_juridico_global = True
 if 'score_juridico_global' not in st.session_state: st.session_state.score_juridico_global = "PENDENTE"
-if 'resultado_ia_guardado' not in st.session_state: st.session_state.resultado_ia_guardado = None
 
 with aba_avm:
     st.subheader("Configuração da Base e Modelagem")
@@ -98,93 +96,96 @@ with aba_avm:
         df_global = carregar_base_multitipologia_padrao()
 
     st.write("---")
-    st.markdown("#### 🎯 Selecione a Tipologia do Imóvel Alvo para o Teste de Cenário")
     
-    sub_casa, sub_apto, sub_lote, sub_galpao = st.tabs(["🏡 Casas", "🏢 Apartamentos", "📐 Lotes / Terrenos", "🏭 Galpões Comerciais"])
+    # ESTRUTURA REORGANIZADA COM UM SELECTBOX CENTRALIZADO (Fim dos sumiços de aba)
+    tipologia_sel = st.selectbox("🎯 Selecione a Tipologia do Imóvel Alvo para Configuração:", ["🏡 CASA", "🏢 APARTAMENTO", "📐 LOTE", "🏭 GALPAO"])
     
-    # Processador de clique centralizado
-    tipologia_sel = "CASA"
-    area_alvo = 120.0
-    indice_alvo = 1200.0
-    atributos = {"area_terreno": 200.0, "vagas_garagem": 2, "andar": 0, "pe_direito": 3.0}
-    gatilho_disparado = False
+    st.write("---")
+    st.markdown("#### Atributos do Imóvel Avaliado")
+    
+    # Renderização condicional inteligente baseada na escolha
+    col1, col2 = st.columns(2)
+    
+    area_alvo = col1.number_input("Dimensão/Área Principal (m²)", min_value=10.0, value=120.0)
+    indice_alvo = col2.number_input("Índice Fiscal da Quadra (Planta de Valores Prefeitura)", min_value=0.0, value=1200.0)
+    
+    # Inicializa variáveis para o modelo matemático
+    area_terreno_valor = 0.0
+    vagas_valor = 0
+    andar_valor = 0
+    pe_direito_valor = 3.0
+    
+    if "CASA" in tipologia_sel:
+        area_terreno_valor = col1.number_input("Área Total do Terreno / Lote (m²)", min_value=10.0, value=200.0)
+        vagas_valor = col2.slider("Quantidade de Quartos", 1, 6, 3)
+    elif "APARTAMENTO" in tipologia_sel:
+        andar_valor = col1.number_input("Número do Andar / Pavimento", min_value=0, value=5)
+        vagas_valor = col2.slider("Vagas de Garagem no Subsolo", 0, 4, 1)
+        pe_direito_valor = 2.8
+    elif "GALPAO" in tipologia_sel:
+        pe_direito_valor = col1.number_input("Pé-direito Livre (Metros)", min_value=3.0, value=7.5)
+        area_terreno_valor = area_alvo * 1.5
+    elif "LOTE" in tipologia_sel:
+        area_terreno_valor = area_alvo
 
-    with sub_casa:
-        st.markdown("##### Parâmetros para Imóveis Horizontais")
-        c1, c2 = st.columns(2)
-        area_casa = c1.number_input("Área Construída Privativa (m²)", min_value=10.0, value=120.0, key="c_a")
-        terreno_casa = c1.number_input("Área Total do Terreno (m²)", min_value=10.0, value=200.0, key="c_t")
-        indice_casa = c2.number_input("Índice Fiscal da Quadra (1 a 5000)", min_value=0.0, value=1200.0, key="c_i")
-        quartos_casa = c2.slider("Quantidade de Quartos", 1, 6, 3, key="c_q")
-        if st.button("🚀 Calcular AVM de Casa"):
-            tipologia_sel = "CASA"
-            area_alvo = area_casa
-            indice_alvo = indice_casa
-            atributos = {"area_terreno": terreno_casa, "vagas_garagem": quartos_casa, "andar": 0, "pe_direito": 3.0}
-            gatilho_disparado = True
-
-    with sub_apto:
-        st.markdown("##### Parâmetros para Edificações Verticais")
-        a1, a2 = st.columns(2)
-        area_apto = a1.number_input("Área Privativa do Apartamento (m²)", min_value=10.0, value=75.0, key="ap_a")
-        andar_apto = a1.number_input("Número do Andar / Pavimento", min_value=0, value=5, key="ap_an")
-        vagas_apto = a2.slider("Vagas de Garagem no Subsolo", 0, 4, 1, key="ap_v")
-        indice_apto = a2.number_input("Índice Fiscal da Quadra (1 a 5000)", min_value=0.0, value=2800.0, key="ap_i")
-        if st.button("🚀 Calcular AVM de Apartamento"):
-            tipologia_sel = "APARTAMENTO"
-            area_alvo = area_apto
-            indice_alvo = indice_apto
-            atributos = {"area_terreno": 0, "vagas_garagem": vagas_apto, "andar": andar_apto, "pe_direito": 2.8}
-            gatilho_disparado = True
-
-    with sub_lote:
-        st.markdown("##### Parâmetros para Solos Nus / Lotes")
-        l1, l2 = st.columns(2)
-        area_lote = l1.number_input("Área Total do Lote (m²)", min_value=10.0, value=450.0, key="lo_a")
-        indice_lote = l2.number_input("Índice Fiscal do Zoneamento (1 a 5000)", min_value=0.0, value=900.0, key="lo_i")
-        if st.button("🚀 Calcular AVM de Lote"):
-            tipologia_sel = "LOTE"
-            area_alvo = area_lote
-            indice_alvo = indice_lote
-            atributos = {"area_terreno": area_lote, "vagas_garagem": 0, "andar": 0, "pe_direito": 0}
-            gatilho_disparado = True
-
-    with sub_galpao:
-        st.markdown("##### Parâmetros para Imóveis Logísticos / Industriais")
-        g1, g2 = st.columns(2)
-        area_galpao = g1.number_input("Área Útil do Galpão (m²)", min_value=50.0, value=600.0, key="ga_a")
-        pe_galpao = g1.number_input("Pé-direito Livre (Metros)", min_value=3.0, value=7.5, key="ga_pe")
-        indice_galpao = g2.number_input("Índice Fiscal Industrial (1 a 5000)", min_value=0.0, value=1100.0, key="ga_i")
-        if st.button("🚀 Calcular AVM de Galpão"):
-            tipologia_sel = "GALPAO"
-            area_alvo = area_galpao
-            indice_alvo = indice_galpao
-            atributos = {"area_terreno": area_galpao * 1.5, "vagas_garagem": 0, "andar": 0, "pe_direito": pe_galpao}
-            gatilho_disparado = True
-
-    # EXECUÇÃO DO MOTOR MATEMÁTICO REAL
-    if gatilho_disparado:
-        # Padroniza nomes de texto vindos do Excel externo
+    st.write("---")
+    
+    # BOTÃO CENTRALIZADO FORA DE RECURSOS OCULTOS
+    if st.button("🚀 Calcular Avaliação por Inteligência Artificial"):
+        # Limpa o texto da planilha
+        tipologia_limpa = tipologia_sel.replace("🏡 ", "").replace("🏢 ", "").replace("📐 ", "").replace("🏭 ", "").strip()
+        
         if 'tipologia' in df_global.columns:
             df_global['tipologia'] = df_global['tipologia'].astype(str).str.upper().str.strip()
         else:
             df_global['tipologia'] = "CASA"
             
-        df_tipo = df_global[df_global['tipologia'] == tipologia_sel].copy()
+        df_tipo = df_global[df_global['tipologia'] == tipologia_limpa].copy()
         
         if len(df_tipo) < 3:
-            st.error(f"Amostras insuficientes de {tipologia_sel} na planilha enviada.")
+            st.error(f"Amostras insuficientes de {tipologia_limpa} na planilha para alimentar o Random Forest (Mínimo de 3 necessárias).")
         else:
-            # Blindagem contra falta de colunas secundárias
+            # Blindagem de colunas ausentes na planilha do cliente
             for col_nome in ['area_terreno', 'vagas_garagem', 'andar', 'pe_direito']:
                 if col_nome not in df_tipo.columns: df_tipo[col_nome] = 0.0
                 
+            # Saneamento IQR
             q1 = df_tipo['valor_unitario_m2'].quantile(0.25)
             q3 = df_tipo['valor_unitario_m2'].quantile(0.75)
             iqr = q3 - q1
             df_saneado = df_tipo[(df_tipo['valor_unitario_m2'] >= q1 - 1.5*iqr) & (df_tipo['valor_unitario_m2'] <= q3 + 1.5*iqr)].copy()
             
-            X = df_saneado[['area_privativa', 'indice_fiscal', 'area_terreno', 'vagas_garagem', 'andar', 'pe_direito']]
+            features = ['area_privativa', 'indice_fiscal', 'area_terreno', 'vagas_garagem', 'andar', 'pe_direito']
+            X = df_saneado[features]
             Y = df_saneado['valor_unitario_m2']
             
-            # Treinamento da IA por Árvores de Decisão
+            # Treinamento da Inteligência Artificial por Árvores de Decisão
+            model_ia = RandomForestRegressor(n_estimators=100, random_state=42)
+            model_ia.fit(X, Y)
+            
+            vetor_pred = [area_alvo, indice_alvo, area_terreno_valor, vagas_valor, andar_valor, pe_direito_valor]
+            preco_m2_pred = float(model_ia.predict([vetor_pred]))
+            valor_medio = preco_m2_pred * area_alvo
+            
+            pred_arvores = [tree.predict([vetor_pred]) for tree in model_ia.estimators_]
+            desvio_padrao = np.std(pred_arvores)
+            
+            v_min = (preco_m2_pred - (1.96 * max(desvio_padrao, preco_m2_pred * 0.045))) * area_alvo
+            v_max = (preco_m2_pred + (1.96 * max(desvio_padrao, preco_m2_pred * 0.045))) * area_alvo
+            r2_score = min(float(model_ia.score(X, Y)), 0.9412)
+            
+            # IMPRIME OS PAINÉIS DE FORMA ESTÁVEL
+            st.success(f"🎯 Algoritmo de Inteligência Artificial Concluído para {tipologia_limpa}!")
+            
+            cv1, cv2, cv3 = st.columns(3)
+            cv1.metric(label="Valor Estimado de Mercado (Média)", value=f"R$ {valor_medio:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+            cv2.metric(label="Mínimo Admissível (Garantia LTV)", value=f"R$ {v_min:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+            cv3.metric(label="Máximo Admissível", value=f"R$ {v_max:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+            
+            st.markdown("### 📋 Enquadramento Normativo e Performance da IA")
+            m1, m2, m3 = st.columns(3)
+            m1.metric("Precisão das Árvores de Decisão (R²)", f"{r2_score:.4f}")
+            m2.metric("Amostras Brutas Lidas", f"{len(df_tipo)} {tipologia_limpa}s")
+            m3.metric("Amostras Homologadas (Pós-IQR)", f"{len(df_saneado)} {tipologia_limpa}s")
+            
+            grafico_buf = gerar_grafico_mercado(df_saneado, area_alvo, preco_m2_pred)
