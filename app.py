@@ -164,7 +164,7 @@ with aba_avm:
             model_ia.fit(X, Y)
             
             vetor_pred = [area_alvo, indice_alvo, area_terreno_valor, vagas_valor, andar_valor, pe_direito_valor]
-            preco_m2_pred = float(model_ia.predict([vetor_pred]))
+            preco_m2_pred = float(model_ia.predict([vetor_pred])[0])
             valor_medio = preco_m2_pred * area_alvo
             
             pred_arvores = [tree.predict([vetor_pred]) for tree in model_ia.estimators_]
