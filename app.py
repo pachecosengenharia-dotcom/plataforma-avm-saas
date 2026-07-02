@@ -36,10 +36,8 @@ def carregar_base_multitipologia_padrao():
         (1500000, 2500, 600, 950, 900, 0, 0, 7.0, "GALPAO"),
         (2100000, 2625, 800, 1100, 1200, 0, 0, 8.0, "GALPAO")
     ]
-    return pd.DataFrame(dados, columns=[
-        'valor_total_declarado', 'valor_unitario_m2', 'area_privativa', 
-        'indice_fiscal', 'area_terreno', 'vagas_garagem', 'andar', 'pe_direito', 'tipologia'
-    ])
+    df_res = pd.DataFrame(dados, columns=['valor_total_declarado', 'valor_unitario_m2', 'area_privativa', 'indice_fiscal', 'area_terreno', 'vagas_garagem', 'andar', 'pe_direito', 'tipologia'])
+    return df_res
 
 # =====================================================================
 # GERADOR DE GRÁFICO IMOBILIÁRIO (Matplotlib)
@@ -66,7 +64,7 @@ def gerar_grafico_mercado(df_saneado, area_alvo, valor_estimado_m2):
 # =====================================================================
 st.title("🏢 Painel Avançado de Engenharia Imobiliária SaaS")
 st.markdown("Gestão automatizada de risco imobiliário por Inteligência Artificial (Random Forest).")
-st.divider()
+st.hr()
 
 st.sidebar.header("🔑 Assinatura e Faturamento")
 tenant_selecionado = st.sidebar.selectbox("Cliente Institucional", ["001 - Banco Alfa S.A.", "002 - Imobiliária Local Ltda"])
