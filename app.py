@@ -50,7 +50,7 @@ def gerar_laudo_pdf_ia(tenant, tipologia, area, valores, model_stats, status_jur
     story.append(Paragraph(f"LAUDO TECNICO CORE AVM - IA ({tipologia})", title_style))
     story.append(Paragraph(f"<b>Instituicao Solicitante:</b> {tenant}", text_style))
     story.append(Spacer(1, 10))
-    t1 = Table([["Tipologia do Bem", tipologia, "Dimensao Principal", f"{area} m²"]], colwidths=[120, 120, 120, 120])
+    t1 = Table([["Tipologia do Bem", tipologia, "Dimensao Principal", f"{area} m²"]], colwidths=[100, 150, 110, 140])
     t1.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#F7FAFC")), ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor("#E2E8F0")), ('PADDING', (0,0), (-1,-1), 5)]))
     story.append(t1)
     t2 = Table([
@@ -58,7 +58,7 @@ def gerar_laudo_pdf_ia(tenant, tipologia, area, valores, model_stats, status_jur
         ["Margem Minima de Seguranca", f"R$ {valores['v_min']:,.2f}"],
         ["Valor de Face Estimado", f"R$ {valores['v_medio']:,.2f}"],
         ["Limite de Mercado Maximo", f"R$ {valores['v_max']:,.2f}"]
-    ], colwidths=[240, 240])
+    ], colwidths=[250, 250])
     t2.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), colors.HexColor("#2B6CB0")), ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke), ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor("#CBD5E0")), ('PADDING', (0,0), (-1,-1), 5)]))
     story.append(t2)
     story.append(Spacer(1, 5))
@@ -143,6 +143,7 @@ with aba_avm:
         model_ia = RandomForestRegressor(n_estimators=100, random_state=42)
         model_ia.fit(X, Y)
         
+        # AJUSTE CORPORATIVO: O cálculo preditivo agora está devidamente aninhado dentro do clique do botão
         vetor_pred = [area_alvo, indice_alvo, area_terreno_valor, vagas_valor, andar_valor, pe_direito_valor]
         preco_m2_pred = float(model_ia.predict([vetor_pred]))
         valor_medio = preco_m2_pred * area_alvo
@@ -160,7 +161,7 @@ with aba_avm:
             "df_saneado": df_saneado, "area_alvo": area_alvo, "preco_m2_pred": preco_m2_pred
         }
 
-    # EXECUÇÃO DO CONTEXTO VISUAL SEGURO (Mapeado fora do gatilho imediato do botão)
+    # EXECUÇÃO DO CONTEXTO VISUAL SEGURO: Renderiza os dados guardados na gaveta de memória
     if st.session_state.memorizar_calculo is not None:
         dados_calc = st.session_state.memorizar_calculo
         st.write("---")
@@ -172,5 +173,3 @@ with aba_avm:
         cv3.metric(label="Maximo Admissivel", value=f"R$ {dados_calc['v_max']:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
         
         st.markdown("### 📋 Enquadramento Normativo e Performance da IA")
-        m1, m2, m3 = st.columns(3)
-        m1.metric("Precisao das Arvores de Decisao (R²)", dados_calc['r2_score'])
